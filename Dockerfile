@@ -21,7 +21,8 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh && chown 10014:0 /app/entrypoint.sh
 
 # 创建数据目录并统一授权给 10014
-RUN mkdir -p /app/data && \
+RUN rm -rf /app/extra/healthcheck && \
+    mkdir -p /app/data && \
     touch /app/sing-box.log && \
     chown -R 10014:0 /app && \
     chmod -R g+w /app
