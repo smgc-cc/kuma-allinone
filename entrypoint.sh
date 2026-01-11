@@ -45,7 +45,7 @@ fi
 # ==============================
 echo "[Kuma] 启动主应用..."
 export UPTIME_KUMA_DATA_DIR="$DATA_DIR/"
-
+export UPTIME_KUMA_DB_SSL=true
 # 确保我们在正确的目录下执行 node
 cd /app
 exec node server/server.js
