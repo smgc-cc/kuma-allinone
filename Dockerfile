@@ -22,10 +22,13 @@ RUN chmod +x /app/entrypoint.sh && chown 10014:0 /app/entrypoint.sh
 
 # 创建数据目录并统一授权给 10014
 RUN rm -rf /app/extra/healthcheck && \
-    mkdir -p /app/data && \
+    mkdir -p /app/data/upload && \
     touch /app/sing-box.log && \
     chown -R 10014:0 /app && \
     chmod -R g+w /app
+
+# 强制 Uptime Kuma 使用绝对路径
+ENV DATA_DIR=/app/data/
 
 # 切换到特定的 UID
 USER 10014
