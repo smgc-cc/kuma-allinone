@@ -1,5 +1,5 @@
 # 基于轻量化的 uptime-kuma:2-slim 镜像
-FROM louislam/uptime-kuma:beta-slim
+FROM louislam/uptime-kuma:2-slim
 
 # 切换回 root 以进行系统级配置
 USER root
@@ -24,11 +24,12 @@ RUN rm -f /app/extra/healthcheck && \
 
 # 复制脚本并修改所有权
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh && chown 10014:0 /app/entrypoint.sh
+COPY backup.sh /app/backup.sh
+COPY restore.sh /app/restore.sh
+RUN chmod +x /app/*.sh && chown 10014:0 /app/*.sh
 
 # 环境变量：确保 Kuma 知道数据存哪
 ENV DATA_DIR=/tmp/data/
-ENV UPTIME_KUMA_DB_SSL=true
 
 # 切换到特定的 UID
 USER 10014
