@@ -7,6 +7,9 @@
 KOMARI_SERVER="${KOMARI_SERVER:-}"
 KOMARI_SECRET="${KOMARI_SECRET:-}"
 
+# 数据库类型（sqlite 或 mariadb）
+UPTIME_KUMA_DB_TYPE="${UPTIME_KUMA_DB_TYPE:-}"
+
 # Webdav 配置
 WEBDAV_URL="${WEBDAV_URL:-}"
 WEBDAV_USER="${WEBDAV_USER:-}"
@@ -44,7 +47,10 @@ fi
 # =========================
 # 2. 首次启动恢复备份
 # =========================
-if [ -n "$WEBDAV_URL" ] && [ ! -f "$DATA_DIR/kuma.db" ]; then
+# 使用 MariaDB 时跳过 SQLite 备份恢复
+if [ "$UPTIME_KUMA_DB_TYPE" = "mariadb" ]; then
+    echo "[Backup] 使用 MariaDB，跳过 SQLite 备份恢复。"
+elif [ -n "$WEBDAV_URL" ] && [ ! -f "$DATA_DIR/kuma.db" ]; then
     echo "[INFO] 首次启动，检查 WebDAV 备份..."
     bash "/app/restore.sh" || echo "[WARN] 恢复失败或无备份"
 fi
@@ -69,7 +75,7 @@ is_backup_hour() {
     return 1
 }
 
-if [ -n "$WEBDAV_URL" ]; then
+if [ "$UPTIME_KUMA_DB_TYPE" != "mariadb" ] && [ -n "$WEBDAV_URL" ]; then
     (
         while true; do
             sleep 3600
