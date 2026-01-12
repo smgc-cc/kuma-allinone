@@ -19,7 +19,6 @@ WORKDIR /app
 # 2. 预创建数据目录
 # 3. 统一授权给 10014 和 root 组 (GID 0)
 RUN rm -f /app/extra/healthcheck && \
-    mkdir -p /app/data/upload /app/data/screenshots /app/data/db /app/data/docker-tls && \
     chown -R 10014:0 /app && \
     chmod -R 775 /app
 
@@ -28,7 +27,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh && chown 10014:0 /app/entrypoint.sh
 
 # 环境变量：确保 Kuma 知道数据存哪
-ENV DATA_DIR=/app/data/
+ENV DATA_DIR=/tmp/data/
 ENV UPTIME_KUMA_DB_SSL=true
 
 # 切换到特定的 UID
