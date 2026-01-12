@@ -31,7 +31,6 @@ RUN chmod +x /app/*.sh && chown 10014:0 /app/*.sh
 
 # 环境变量：确保 Kuma 知道数据存哪
 ENV DATA_DIR=/tmp/data/
-ENV HOST=0.0.0.0
 
 # 切换到特定的 UID
 USER 10014
