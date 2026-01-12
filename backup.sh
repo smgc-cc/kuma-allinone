@@ -2,12 +2,11 @@
 set -u
 
 # 环境变量配置与默认值
-WEBDAV_URL=${WEBDAV_URL:-}
-WEBDAV_USER=${WEBDAV_USER:-}
-WEBDAV_PASS=${WEBDAV_PASS:-}
-BACKUP_PASS=""
-BACKUP_HOUR=4
-KEEP_DAYS=5
+WEBDAV_URL="${WEBDAV_URL:-}"
+WEBDAV_USER="${WEBDAV_USER:-}"
+WEBDAV_PASS="${WEBDAV_PASS:-}"
+BACKUP_PASS="${BACKUP_PASS:-}"
+KEEP_DAYS="${KEEP_DAYS:-5}"
 
 DATA_DIR="${DATA_DIR:-}"
 TIMESTAMP=$(TZ="${TZ:-Asia/Shanghai}" date +"%Y-%m-%d-%H-%M-%S")
@@ -58,7 +57,7 @@ UPLOAD_STATUS=$(curl -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
     "${WEBDAV_URL}${BACKUP_FILE}")
 
 if [ "$UPLOAD_STATUS" -ge 200 ] && [ "$UPLOAD_STATUS" -lt 300 ]; then
-    echo "[SUCCESS] 上传成功 ✓"
+    echo "[OK] 上传成功"
 else
     echo "[ERROR] 上传失败 (HTTP $UPLOAD_STATUS)"
     rm -rf "$TEMP_DIR"
@@ -85,9 +84,9 @@ FILELIST=$(curl -s -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
     "${WEBDAV_URL}" 2>/dev/null)
 
 # 提取文件名
-echo "$FILELIST" | grep -oE 'lunes-host-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}\.zip' | sort -u | while read old_file; do
+echo "$FILELIST" | grep -oE 'kuma-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}\.zip' | sort -u | while read old_file; do
     # 提取日期部分
-    file_date=$(echo "$old_file" | sed -n 's/lunes-host-backup-\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\).*/\1/p')
+    file_date=$(echo "$old_file" | sed -n 's/kuma-backup-\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\).*/\1/p')
     
     if [ -n "$file_date" ] && [ "$file_date" \< "$OLD_DATE" ]; then
         echo "[INFO] 删除旧备份: $old_file"
@@ -97,9 +96,9 @@ echo "$FILELIST" | grep -oE 'lunes-host-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{
             "${WEBDAV_URL}${old_file}")
         
         if [ "$DELETE_STATUS" -ge 200 ] && [ "$DELETE_STATUS" -lt 300 ]; then
-            echo "  ✓ 已删除"
+            echo "[OK] 已删除"
         else
-            echo "  ✗ 删除失败 (HTTP $DELETE_STATUS)"
+            echo "[ERROR] 删除失败 (HTTP $DELETE_STATUS)"
         fi
     fi
 done
@@ -108,5 +107,5 @@ done
 rm -rf "$TEMP_DIR"
 
 echo "=========================================="
-echo "[SUCCESS] 备份完成: $BACKUP_FILE 🎉"
+echo "[OK] 备份完成: $BACKUP_FILE"
 echo "=========================================="

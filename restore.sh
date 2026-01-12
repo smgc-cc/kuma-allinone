@@ -2,12 +2,10 @@
 set -u
 
 # 环境变量配置与默认值
-WEBDAV_URL=${WEBDAV_URL:-}
-WEBDAV_USER=${WEBDAV_USER:-}
-WEBDAV_PASS=${WEBDAV_PASS:-}
-BACKUP_PASS=""
-BACKUP_HOUR=4
-KEEP_DAYS=5
+WEBDAV_URL="${WEBDAV_URL:-}"
+WEBDAV_USER="${WEBDAV_USER:-}"
+WEBDAV_PASS="${WEBDAV_PASS:-}"
+BACKUP_PASS="${BACKUP_PASS:-}"
 
 DATA_DIR="${DATA_DIR:-}"
 BACKUP_FILE="${1:-}"
@@ -48,12 +46,18 @@ cd "$TEMP_DIR"
 
 # 下载备份
 echo "[INFO] 下载备份..."
-curl -s -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
-    -o "backup.zip" \
-    "${WEBDAV_URL}${BACKUP_FILE}"
+DOWNLOAD_STATUS=$(curl -s -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
+    -o "backup.zip" -w "%{http_code}" \
+    "${WEBDAV_URL}${BACKUP_FILE}")
+
+if [ "$DOWNLOAD_STATUS" -lt 200 ] || [ "$DOWNLOAD_STATUS" -ge 300 ]; then
+    echo "[ERROR] 下载失败 (HTTP $DOWNLOAD_STATUS)"
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
 
 if [ ! -s "backup.zip" ]; then
-    echo "[ERROR] 下载失败"
+    echo "[ERROR] 下载失败，文件为空"
     rm -rf "$TEMP_DIR"
     exit 1
 fi
@@ -80,5 +84,5 @@ cp -R data/* "$DATA_DIR/"
 rm -rf "$TEMP_DIR"
 
 echo "=========================================="
-echo "[SUCCESS] 恢复完成 ✓"
+echo "[OK] 恢复完成"
 echo "=========================================="

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # ==============================
 # 环境变量配置与默认值
@@ -8,18 +8,21 @@ KOMARI_SERVER="${KOMARI_SERVER:-}"
 KOMARI_SECRET="${KOMARI_SECRET:-}"
 
 # Webdav 配置
-WEBDAV_URL=${WEBDAV_URL:-}
-WEBDAV_USER=${WEBDAV_USER:-}
-WEBDAV_PASS=${WEBDAV_PASS:-}
+WEBDAV_URL="${WEBDAV_URL:-}"
+WEBDAV_USER="${WEBDAV_USER:-}"
+WEBDAV_PASS="${WEBDAV_PASS:-}"
 
 # 备份密码（可选，留空则不加密）
-BACKUP_PASS=""
+BACKUP_PASS="${BACKUP_PASS:-}"
 
-# 每天备份时间（小时，0-23）
-BACKUP_HOUR=4
+# 每天备份时间（小时，0-23，支持多个时间点如 4,14,20）
+BACKUP_HOUR="${BACKUP_HOUR:-4}"
 
 # 保留备份天数
-KEEP_DAYS=5
+KEEP_DAYS="${KEEP_DAYS:-5}"
+
+# 导出环境变量供子脚本使用
+export WEBDAV_URL WEBDAV_USER WEBDAV_PASS BACKUP_PASS KEEP_DAYS DATA_DIR
 
 # 清理函数的定义
 cleanup() {
@@ -49,22 +52,43 @@ fi
 # =========================
 # 3. 备份守护进程
 # =========================
+# 检查当前小时是否在备份时间列表中
+is_backup_hour() {
+    local current_hour="$1"
+    local hour_list="$2"
+    # 移除前导零以便比较
+    current_hour=$(echo "$current_hour" | sed 's/^0//')
+
+    IFS=',' read -ra HOURS <<< "$hour_list"
+    for hour in "${HOURS[@]}"; do
+        hour=$(echo "$hour" | tr -d ' ')
+        if [ "$current_hour" -eq "$hour" ] 2>/dev/null; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 if [ -n "$WEBDAV_URL" ]; then
     (
         while true; do
             sleep 3600
             current_date=$(date +"%Y-%m-%d")
             current_hour=$(date +"%H")
-            LAST_BACKUP_FILE="/tmp/last_backup_date"
-            [ -f "$LAST_BACKUP_FILE" ] && last_backup_date=$(cat "$LAST_BACKUP_FILE") || last_backup_date=""
-            
-            if [ "$current_hour" -eq "${BACKUP_HOUR:-4}" ] && [ "$last_backup_date" != "$current_date" ]; then
-                echo "[INFO] 执行每日备份..."
+            current_hour_num=$(echo "$current_hour" | sed 's/^0//')
+            LAST_BACKUP_FILE="/tmp/last_backup_${current_hour_num}"
+
+            if is_backup_hour "$current_hour" "$BACKUP_HOUR"; then
+                # 检查该时间点今天是否已备份
+                if [ -f "$LAST_BACKUP_FILE" ] && [ "$(cat "$LAST_BACKUP_FILE")" = "$current_date" ]; then
+                    continue
+                fi
+                echo "[INFO] 执行定时备份 (${current_hour_num}:00)..."
                 bash "/app/backup.sh" && echo "$current_date" > "$LAST_BACKUP_FILE"
             fi
         done
     ) &
-    echo "✓ 备份守护进程已启动 (每天 ${BACKUP_HOUR:-4}:00)"
+    echo "[OK] 备份守护进程已启动 (备份时间: ${BACKUP_HOUR}:00)"
 fi
 
 # ==============================
