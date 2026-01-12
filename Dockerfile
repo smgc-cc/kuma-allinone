@@ -11,9 +11,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update && apt-get install -y gzip
 
 # 从其他镜像复制必要的二进制文件
-COPY --from=ghcr.io/sagernet/sing-box:latest /usr/local/bin/sing-box /usr/local/bin/sing-box
 COPY --from=ghcr.io/komari-monitor/komari-agent:latest /app/komari-agent /app/komari-agent
-COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
 # 设置工作目录
 WORKDIR /app
@@ -33,6 +31,7 @@ RUN chmod +x /app/*.sh && chown 10014:0 /app/*.sh
 
 # 环境变量：确保 Kuma 知道数据存哪
 ENV DATA_DIR=/tmp/data/
+ENV HOST=0.0.0.0
 
 # 切换到特定的 UID
 USER 10014
