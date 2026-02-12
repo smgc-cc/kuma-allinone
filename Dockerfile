@@ -1,22 +1,31 @@
 # ==========================================
-# 第一阶段：构建环境 (Builder)
+# 阶段 1: 构建阶段 (Builder)
 # ==========================================
 FROM golang:alpine AS builder
 
 WORKDIR /src
 
-# 安装 git 用于拉取源码
+# 安装 git
 RUN apk add --no-cache git
 
 # 1. 拉取源码
 RUN git clone https://github.com/komari-monitor/komari-agent.git .
 
-# 2. 编译二进制文件
-# - CGO_ENABLED=0: 禁用 CGO，确保生成静态链接文件，可以运行在任何 Linux 发行版上
-# - -ldflags="-s -w": 去除调试信息，减小文件体积
-# - -o komari-agent: 输出文件名
-RUN go mod download && \
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o komari-agent .
+# 2. 检出最新的 Tag
+RUN git fetch --tags && \
+    LATEST_TAG=$(git describe --tags --abbrev=0) && \
+    git checkout $LATEST_TAG
+
+# 3. 编译并注入版本号
+RUN VERSION=$(git describe --tags --always) && \
+    echo "--------------------------------------" && \
+    echo "正在构建版本: $VERSION" && \
+    echo "--------------------------------------" && \
+    go mod download && \
+    CGO_ENABLED=0 go build \
+    -trimpath \
+    -ldflags="-s -w -X github.com/komari-monitor/komari-agent/update.CurrentVersion=${VERSION}" \
+    -o komari-agent .
 
 # ==========================================
 # 第二阶段：运行环境 (Final Image)
@@ -36,8 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends zip unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------------------------------------
-# 关键修改：从第一阶段 (builder) 复制我们刚编译好的全新二进制文件
-# 而不是从 ghcr.io/komari-monitor/komari-agent 复制旧文件
+# 从第一阶段 (builder) 复制我们编译好的 komari-agent 二进制文件
 # ------------------------------------------------------------
 COPY --from=builder /src/komari-agent /app/komari-agent
 
